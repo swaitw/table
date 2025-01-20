@@ -1,12 +1,9 @@
 {
-  "composite": true,
-  "extends": "../../tsconfig.base.json",
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "outDir": "./build/types"
+    "jsx": "react",
+    "rootDir": "./src",
+    "outDir": "./build/lib"
   },
-  "files": ["src/index.tsx"],
-  "include": [
-    "src"
-    //  "__tests__/**/*.test.*"
-  ]
+  "include": ["src"]
 }

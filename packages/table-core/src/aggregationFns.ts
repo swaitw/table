@@ -1,22 +1,20 @@
-import { AggregationFn } from './features/Grouping'
+import { AggregationFn } from './features/ColumnGrouping'
+import { isNumberArray } from './utils'
 
 const sum: AggregationFn<any> = (columnId, _leafRows, childRows) => {
   // It's faster to just add the aggregations together instead of
   // process leaf nodes individually
-  return childRows.reduce(
-    (sum, next) => {
-      const nextValue = next.getValue(columnId)
-      return sum + (typeof nextValue === 'number' ? nextValue : 0)
-    },
-    0
-  )
+  return childRows.reduce((sum, next) => {
+    const nextValue = next.getValue(columnId)
+    return sum + (typeof nextValue === 'number' ? nextValue : 0)
+  }, 0)
 }
 
 const min: AggregationFn<any> = (columnId, _leafRows, childRows) => {
   let min: number | undefined
 
   childRows.forEach(row => {
-    const value = row.getValue(columnId)
+    const value = row.getValue<number>(columnId)
 
     if (
       value != null &&
@@ -33,7 +31,7 @@ const max: AggregationFn<any> = (columnId, _leafRows, childRows) => {
   let max: number | undefined
 
   childRows.forEach(row => {
-    const value = row.getValue(columnId)
+    const value = row.getValue<number>(columnId)
     if (
       value != null &&
       (max! < value || (max === undefined && value >= value))
@@ -50,7 +48,7 @@ const extent: AggregationFn<any> = (columnId, _leafRows, childRows) => {
   let max: number | undefined
 
   childRows.forEach(row => {
-    const value = row.getValue(columnId)
+    const value = row.getValue<number>(columnId)
     if (value != null) {
       if (min === undefined) {
         if (value >= value) min = max = value
@@ -69,7 +67,7 @@ const mean: AggregationFn<any> = (columnId, leafRows) => {
   let sum = 0
 
   leafRows.forEach(row => {
-    let value = row.getValue(columnId)
+    let value = row.getValue<number>(columnId)
     if (value != null && (value = +value) >= value) {
       ++count, (sum += value)
     }
@@ -85,18 +83,17 @@ const median: AggregationFn<any> = (columnId, leafRows) => {
     return
   }
 
-  let min = 0
-  let max = 0
+  const values = leafRows.map(row => row.getValue(columnId))
+  if (!isNumberArray(values)) {
+    return
+  }
+  if (values.length === 1) {
+    return values[0]
+  }
 
-  leafRows.forEach(row => {
-    let value = row.getValue(columnId)
-    if (typeof value === 'number') {
-      min = Math.min(min, value)
-      max = Math.max(max, value)
-    }
-  })
-
-  return (min + max) / 2
+  const mid = Math.floor(values.length / 2)
+  const nums = values.sort((a, b) => a - b)
+  return values.length % 2 !== 0 ? nums[mid] : (nums[mid - 1]! + nums[mid]!) / 2
 }
 
 const unique: AggregationFn<any> = (columnId, leafRows) => {

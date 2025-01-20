@@ -1,5 +1,5 @@
 ---
-title: ColumnDef
+title: ColumnDef APIs
 ---
 
 Column definitions are plain objects with the following options:
@@ -16,7 +16,7 @@ The unique identifier for the column.
 
 > 🧠 A column ID is optional when:
 >
-> - A data column is created with an object key accessor
+> - An accessor column is created with an object key accessor
 > - The column header is defined as a string
 
 ### `accessorKey`
@@ -69,29 +69,39 @@ footer?:
     }) => unknown)
 ```
 
-The footer to display for the column. If a function is passed, it will be passed a props object for the header and should return the rendered header value (the exact type depends on the adapter being used).
+The footer to display for the column. If a function is passed, it will be passed a props object for the footer and should return the rendered footer value (the exact type depends on the adapter being used).
 
 ### `cell`
 
 ```tsx
-cell?: ((props: {
-  table: Table<TData>
-  row: Row<TData>
-  column: Column<TData>
-  cell: Cell<TData>
-  getValue: () => any
-  renderValue: () => any
-}) => unknown)
+cell?:
+  | string
+  | ((props: {
+      table: Table<TData>
+      row: Row<TData>
+      column: Column<TData>
+      cell: Cell<TData>
+      getValue: () => any
+      renderValue: () => any
+    }) => unknown)
 ```
 
-The cell to display each row for the column. If a function is passed, it will be passed a props object for the header and should return the rendered header value (the exact type depends on the adapter being used).
+The cell to display each row for the column. If a function is passed, it will be passed a props object for the cell and should return the rendered cell value (the exact type depends on the adapter being used).
 
 ### `meta`
 
 ```tsx
-meta?: unknown
+meta?: ColumnMeta // This interface is extensible via declaration merging. See below!
 ```
 
-The meta data to associated with the column.
+The meta data to be associated with the column. We can access it anywhere when the column is available via `column.columnDef.meta`. This type is global to all tables and can be extended like so:
 
-> ⚠️ Due to generic limitations, This meta object must be typecast to the correct type before usage.
+```tsx
+import '@tanstack/react-table' //or vue, svelte, solid, qwik, etc.
+
+declare module '@tanstack/react-table' {
+  interface ColumnMeta<TData extends RowData, TValue> {
+    foo: string
+  }
+}
+```

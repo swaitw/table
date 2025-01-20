@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import {
-  flexRender,
+  createColumnHelper,
+  FlexRender,
   getCoreRowModel,
   useVueTable,
 } from '@tanstack/vue-table'
@@ -8,56 +9,54 @@ import type {
   Column,
   ColumnOrderState,
   ColumnPinningState,
-  ColumnDef
 } from '@tanstack/vue-table'
 
 import { makeData, type Person } from './makeData'
 import { ref } from 'vue'
-import faker from '@faker-js/faker'
+import { faker } from '@faker-js/faker'
 
-const defaultColumns: ColumnDef<Person>[] = [
-  {
+const data = ref(makeData(5000))
+
+const columnHelper = createColumnHelper<Person>()
+
+const columns = ref([
+  columnHelper.group({
+    // id: 'Name',
     header: 'Name',
     footer: props => props.column.id,
     columns: [
-      {
-        accessorKey: 'firstName',
+      columnHelper.accessor('firstName', {
         cell: info => info.getValue(),
         footer: props => props.column.id,
       }),
-      {
-        accessorFn: row => row.lastName,
+      columnHelper.accessor(row => row.lastName, {
         id: 'lastName',
         cell: info => info.getValue(),
-        header: 'Last Name',
+        header: () => 'Last Name',
         footer: props => props.column.id,
       }),
     ],
   }),
-  {
+  columnHelper.group({
     header: 'Info',
     footer: props => props.column.id,
     columns: [
-      {
-        accessorKey: 'age',
-        header: 'Age',
+      columnHelper.accessor('age', {
+        header: () => 'Age',
         footer: props => props.column.id,
       }),
-      {
+      columnHelper.group({
         header: 'More Info',
         columns: [
-          {
-            accessorKey: 'visits',
+          columnHelper.accessor('visits', {
             header: () => 'Visits',
             footer: props => props.column.id,
           }),
-          {
-            accessorKey: 'status',
+          columnHelper.accessor('status', {
             header: 'Status',
             footer: props => props.column.id,
           }),
-          {
-            accessorKey: 'progress',
+          columnHelper.accessor('progress', {
             header: 'Profile Progress',
             footer: props => props.column.id,
           }),
@@ -65,10 +64,8 @@ const defaultColumns: ColumnDef<Person>[] = [
       }),
     ],
   }),
-]
+])
 
-const data = ref(makeData(5000))
-const columns = ref(defaultColumns)
 const columnVisibility = ref({})
 const columnOrder = ref<ColumnOrderState>([])
 
@@ -97,10 +94,12 @@ const table = useVueTable({
   },
 
   onColumnOrderChange: order => {
-    columnOrder.value = order
+    columnOrder.value =
+      order instanceof Function ? order(columnOrder.value) : order
   },
   onColumnPinningChange: pinning => {
-    columnPinning.value = pinning()
+    columnPinning.value =
+      pinning instanceof Function ? pinning(columnPinning.value) : pinning
   },
   getCoreRowModel: getCoreRowModel(),
   debugTable: true,
@@ -114,7 +113,7 @@ const randomizeColumns = () => {
   )
 }
 
-function toggleColumnVisibility(column: Column<any>) {
+function toggleColumnVisibility(column: Column<any, any>) {
   columnVisibility.value = {
     ...columnVisibility.value,
     [column.id]: !column.getIsVisible(),
@@ -185,9 +184,10 @@ function toggleAllColumnsVisibility() {
               :colSpan="header.colSpan"
             >
               <div class="whitespace-nowrap">
-                <component
+                <FlexRender
                   v-if="!header.isPlaceholder"
-                  :is="header.renderHeader"
+                  :render="header.column.columnDef.header"
+                  :props="header.getContext()"
                 />
               </div>
               <div
@@ -225,7 +225,10 @@ function toggleAllColumnsVisibility() {
             :key="row.id"
           >
             <td v-for="cell in row.getLeftVisibleCells()" :key="cell.id">
-              <component :is="cell.renderCell" />
+              <FlexRender
+                :render="cell.column.columnDef.cell"
+                :props="cell.getContext()"
+              />
             </td>
           </tr>
         </tbody>
@@ -245,9 +248,10 @@ function toggleAllColumnsVisibility() {
               :colSpan="header.colSpan"
             >
               <div class="whitespace-nowrap">
-                <component
+                <FlexRender
                   v-if="!header.isPlaceholder"
-                  :is="header.renderHeader"
+                  :render="header.column.columnDef.header"
+                  :props="header.getContext()"
                 />
               </div>
               <div
@@ -290,7 +294,10 @@ function toggleAllColumnsVisibility() {
                 : row.getVisibleCells()"
               :key="cell.id"
             >
-              <component :is="cell.renderCell" />
+              <FlexRender
+                :render="cell.column.columnDef.cell"
+                :props="cell.getContext()"
+              />
             </td>
           </tr>
         </tbody>
@@ -308,9 +315,10 @@ function toggleAllColumnsVisibility() {
               :colSpan="header.colSpan"
             >
               <div class="whitespace-nowrap">
-                <component
+                <FlexRender
                   v-if="!header.isPlaceholder"
-                  :is="header.renderHeader"
+                  :render="header.column.columnDef.header"
+                  :props="header.getContext()"
                 />
               </div>
               <div
@@ -348,7 +356,10 @@ function toggleAllColumnsVisibility() {
             :key="row.id"
           >
             <td v-for="cell in row.getRightVisibleCells()" :key="cell.id">
-              <component :is="cell.renderCell" />
+              <FlexRender
+                :render="cell.column.columnDef.cell"
+                :props="cell.getContext()"
+              />
             </td>
           </tr>
         </tbody>

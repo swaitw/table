@@ -4,9 +4,13 @@
     createSvelteTable,
     getCoreRowModel,
     getSortedRowModel,
-    TableOptions,
     flexRender,
-ColumnDef,
+  } from '@tanstack/svelte-table'
+  import type {
+    ColumnDef,
+    OnChangeFn,
+    TableOptions,
+    VisibilityState,
   } from '@tanstack/svelte-table'
   import './index.css'
 
@@ -18,8 +22,6 @@ ColumnDef,
     status: string
     progress: number
   }
-
-  
 
   const defaultData: Person[] = [
     {
@@ -58,7 +60,7 @@ ColumnDef,
           cell: info => info.getValue(),
           footer: props => props.column.id,
         },
-         {
+        {
           accessorFn: row => row.lastName,
           id: 'lastName',
           cell: info => info.getValue(),
@@ -100,9 +102,9 @@ ColumnDef,
     },
   ]
 
-  let columnVisibility = {}
+  let columnVisibility: VisibilityState = {}
 
-  const setColumnVisibility = updater => {
+  const setColumnVisibility: OnChangeFn<VisibilityState> = updater => {
     if (updater instanceof Function) {
       columnVisibility = updater(columnVisibility)
     } else {
@@ -117,19 +119,17 @@ ColumnDef,
     }))
   }
 
-  const options = writable<TableOptions<Person>>(
-    {
-      data: defaultData,
-      columns,
-      state: {
-        columnVisibility,
-      },
-      onColumnVisibilityChange: setColumnVisibility,
-      getCoreRowModel: getCoreRowModel(),
-      getSortedRowModel: getSortedRowModel(),
-      debugTable: true,
-    }
-  )
+  const options = writable<TableOptions<Person>>({
+    data: defaultData,
+    columns,
+    state: {
+      columnVisibility,
+    },
+    onColumnVisibilityChange: setColumnVisibility,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    debugTable: true,
+  })
 
   const rerender = () => {
     options.update(options => ({
@@ -137,7 +137,7 @@ ColumnDef,
       data: defaultData,
     }))
   }
-  const table = createSvelteTable( options)
+  const table = createSvelteTable(options)
 </script>
 
 <div class="p-2">
@@ -175,7 +175,12 @@ ColumnDef,
           {#each headerGroup.headers as header}
             <th colSpan={header.colSpan}>
               {#if !header.isPlaceholder}
-                <svelte:component this={flexRender(header.column.columnDef.header, header.getContext())} />
+                <svelte:component
+                  this={flexRender(
+                    header.column.columnDef.header,
+                    header.getContext()
+                  )}
+                />
               {/if}
             </th>
           {/each}
@@ -187,7 +192,9 @@ ColumnDef,
         <tr>
           {#each row.getVisibleCells() as cell}
             <td>
-              <svelte:component this={flexRender(cell.column.columnDef.cell, cell.getContext())} />
+              <svelte:component
+                this={flexRender(cell.column.columnDef.cell, cell.getContext())}
+              />
             </td>
           {/each}
         </tr>
@@ -199,7 +206,12 @@ ColumnDef,
           {#each footerGroup.headers as header}
             <th colSpan={header.colSpan}>
               {#if !header.isPlaceholder}
-                <svelte:component this={flexRender(header.column.columnDef.footer, header.getContext())} />
+                <svelte:component
+                  this={flexRender(
+                    header.column.columnDef.footer,
+                    header.getContext()
+                  )}
+                />
               {/if}
             </th>
           {/each}

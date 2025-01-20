@@ -1,6 +1,6 @@
-import { ResolvedColumnFilter } from '../features/Filters'
-import { Table, RowModel, TableGenerics, Row, RowData } from '../types'
-import { memo } from '../utils'
+import { ResolvedColumnFilter } from '../features/ColumnFiltering'
+import { Table, RowModel, Row, RowData } from '../types'
+import { getMemoOptions, memo } from '../utils'
 import { filterRows } from './filterRowsUtils'
 
 export function getFilteredRowModel<TData extends RowData>(): (
@@ -32,11 +32,7 @@ export function getFilteredRowModel<TData extends RowData>(): (
           const column = table.getColumn(d.id)
 
           if (!column) {
-            if (process.env.NODE_ENV !== 'production') {
-              console.warn(
-                `Table: Could not find a column to filter with columnId: ${d.id}`
-              )
-            }
+            return
           }
 
           const filterFn = column.getFilterFn()
@@ -57,7 +53,7 @@ export function getFilteredRowModel<TData extends RowData>(): (
           })
         })
 
-        const filterableIds = columnFilters.map(d => d.id)
+        const filterableIds = (columnFilters ?? []).map(d => d.id)
 
         const globalFilterFn = table.getGlobalFilterFn()
 
@@ -148,12 +144,8 @@ export function getFilteredRowModel<TData extends RowData>(): (
         // Filter final rows using all of the active filters
         return filterRows(rowModel.rows, filterRowsImpl, table)
       },
-      {
-        key: process.env.NODE_ENV === 'development' && 'getFilteredRowModel',
-        debug: () => table.options.debugAll ?? table.options.debugTable,
-        onChange: () => {
-          table._autoResetPageIndex()
-        },
-      }
+      getMemoOptions(table.options, 'debugTable', 'getFilteredRowModel', () =>
+        table._autoResetPageIndex()
+      )
     )
 }

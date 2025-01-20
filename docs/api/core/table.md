@@ -1,8 +1,8 @@
 ---
-title: Table
+title: Table APIs
 ---
 
-## `useReactTable` / `createSolidTable` / `useVueTable` / `createSvelteTable`
+## `createAngularTable` / `useReactTable` / `createSolidTable` / `useQwikTable` / `useVueTable` / `createSvelteTable`
 
 ```tsx
 type useReactTable = <TData extends AnyData>(
@@ -14,7 +14,7 @@ These functions are used to create a table. Which one you use depends on which f
 
 ## Options
 
-These are **core** options and API properties for the table. More options and API properties are available for other [table features](../guide/features.md).
+These are **core** options and API properties for the table. More options and API properties are available for other [table features](../../../guide/features).
 
 ### `data`
 
@@ -22,11 +22,11 @@ These are **core** options and API properties for the table. More options and AP
 data: TData[]
 ```
 
-The data for the table to display. This is array should match the type you provided to `table.setRowType<...>`, but in theiry could be an array of anything. It's common for each item in the array to be an object of key/values but this is not required. Columns can access this data via string/index or a functional accessor to return anything they want.
+The data for the table to display. This array should match the type you provided to `table.setRowType<...>`, but in theory could be an array of anything. It's common for each item in the array to be an object of key/values but this is not required. Columns can access this data via string/index or a functional accessor to return anything they want.
 
 When the `data` option changes reference (compared via `Object.is`), the table will reprocess the data. Any other data processing that relies on the core data model (such as grouping, sorting, filtering, etc) will also be reprocessed.
 
-> 🧠 Make sure your `data` option is only changing when you want the table to reprocess. Providing an inline `[]` or construction the data array as a new object every time you want to render the table will result in a _lot_ of unnecessary re-processing. This can easily go unnoticed in smaller tables, but you will likely notice it in larger tables.
+> 🧠 Make sure your `data` option is only changing when you want the table to reprocess. Providing an inline `[]` or constructing the data array as a new object every time you want to render the table will result in a _lot_ of unnecessary re-processing. This can easily go unnoticed in smaller tables, but you will likely notice it in larger tables.
 
 ### `columns`
 
@@ -34,15 +34,15 @@ When the `data` option changes reference (compared via `Object.is`), the table w
 type columns = ColumnDef<TData>[]
 ```
 
-The array of column defs to use for the table.
+The array of column defs to use for the table. See the [Column Defs Guide](../../docs/guide/column-defs) for more information on creating column definitions.
 
 ### `defaultColumn`
 
 ```tsx
-defaultColumn?: Partial<ColumnDef<TData>>[]
+defaultColumn?: Partial<ColumnDef<TData>>
 ```
 
-Default column options to use for all column defs supplied to the table. This is useful for providing default cell/header/footer renderers, sorting/filtering/grouping options, etc.
+Default column options to use for all column defs supplied to the table. This is useful for providing default cell/header/footer renderers, sorting/filtering/grouping options, etc. All column definitions passed to `options.columns` are merged with this default column definition to produce the final column definitions.
 
 ### `initialState`
 
@@ -61,7 +61,7 @@ initialState?: Partial<
 >
 ```
 
-Use this option to optionally pass initial state to the table. This state will be used when resetting various table states either automatically by the table (eg. `options.autoResetPagination`) or via functions like `table.resetRowSelection()`. Most reset function allow you optionally pass a flag to reset to a blank/default state instead of the initial state.
+Use this option to optionally pass initial state to the table. This state will be used when resetting various table states either automatically by the table (eg. `options.autoResetPageIndex`) or via functions like `table.resetRowSelection()`. Most reset function allow you optionally pass a flag to reset to a blank/default state instead of the initial state.
 
 > 🧠 Table state will not be reset when this object changes, which also means that the initial state object does not need to be stable.
 
@@ -76,14 +76,20 @@ Set this option to override any of the `autoReset...` feature options.
 ### `meta`
 
 ```tsx
-meta?: unknown
+meta?: TableMeta // This interface is extensible via declaration merging. See below!
 ```
 
-You can pass any object to `options.meta` and access it anywhere the `table` is available via `table.options.meta`
+You can pass any object to `options.meta` and access it anywhere the `table` is available via `table.options.meta` This type is global to all tables and can be extended like so:
 
-> ⚠️ Because of generic limitations, this type must be cast to the correct type before use.
+```tsx
+declare module '@tanstack/table-core' {
+  interface TableMeta<TData extends RowData> {
+    foo: string
+  }
+}
+```
 
-> 🧠 Think of this option as an arbitrary "context" for your table. This is a great way to pass arbitrary data or functions to your table without having to pass it to every thing the table touches. A good example is passing a locale object to your table to use for formatting dates, numbers, etc or even a function that can be used to updated editable data like in the [editable-data example](../examples/react/editable-data).
+> 🧠 Think of this option as an arbitrary "context" for your table. This is a great way to pass arbitrary data or functions to your table without having to pass it to every thing the table touches. A good example is passing a locale object to your table to use for formatting dates, numbers, etc or even a function that can be used to update editable data like in the [editable-data example](../../../framework/react/examples/editable-data).
 
 ### `state`
 
@@ -162,6 +168,14 @@ debugRows?: boolean
 
 Set this option to true to output row debugging information to the console.
 
+### `_features`
+
+```tsx
+_features?: TableFeature[]
+```
+
+An array of extra features that you can add to the table instance.
+
 ### `render`
 
 > ⚠️ This option is only necessary if you are implementing a table adapter.
@@ -213,23 +227,7 @@ getRowId?: (
 ) => string
 ```
 
-This optional function is used to derive a unique ID for any given row. If not provided the rows index is used (nested rows join together with `.` using their grandparents' index eg. `index.index.index`). If you need to identify individual rows that are originating from any server-side operations, it's suggested you use this function to return an ID that makes sense regardless of network IO/amiguity eg. a userId, taskId, database ID field, etc.
-
-### `columns`
-
-```tsx
-type columns = ColumnDef<TData>[]
-```
-
-The column defs to use for this table. See the [Column Defs Guide](../guide/column-defs.md) for more information on creating column definitions.
-
-### `defaultColumn`
-
-```tsx
-defaultColumn?: Partial<ColumnDef<TData>>
-```
-
-An optional, partial column default column definition. All column definitions passed to `options.columns` are merged with this default column definition to produce the final column definitions.
+This optional function is used to derive a unique ID for any given row. If not provided the rows index is used (nested rows join together with `.` using their grandparents' index eg. `index.index.index`). If you need to identify individual rows that are originating from any server-side operations, it's suggested you use this function to return an ID that makes sense regardless of network IO/ambiguity eg. a userId, taskId, database ID field, etc.
 
 ## Table API
 
@@ -349,7 +347,7 @@ Returns all leaf-node columns in the table flattened to a single level. This doe
 ### `getColumn`
 
 ```tsx
-type getColumn = (id: string) => Column<TData>
+type getColumn = (id: string) => Column<TData> | undefined
 ```
 
 Returns a single column by its ID.

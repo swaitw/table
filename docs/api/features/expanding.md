@@ -1,17 +1,17 @@
 ---
-title: Expanding
+title: Expanding APIs
 id: expanding
 ---
 
 ## State
 
-Grouping state is stored on the table using the following shape:
+Expanding state is stored on the table using the following shape:
 
 ```tsx
-export type GroupingState = string[]
+export type ExpandedState = true | Record<string, boolean>
 
-export type GroupingTableState = {
-  grouping: GroupingState
+export type ExpandedTableState = {
+  expanded: ExpandedState
 }
 ```
 
@@ -32,6 +32,14 @@ getIsExpanded: () => boolean
 ```
 
 Returns whether the row is expanded.
+
+### `getIsAllParentsExpanded`
+
+```tsx
+getIsAllParentsExpanded: () => boolean
+```
+
+Returns whether all parent rows of the row are expanded.
 
 ### `getCanExpand`
 
@@ -73,7 +81,7 @@ This function is called when the `expanded` table state changes. If a function i
 autoResetExpanded?: boolean
 ```
 
-Enable this setting to automatically reset the expanded state of the table when grouping state changes.
+Enable this setting to automatically reset the expanded state of the table when expanding state changes.
 
 ### `enableExpanding`
 
@@ -113,11 +121,11 @@ If provided, allows you to override the default behavior of determining whether 
 paginateExpandedRows?: boolean
 ```
 
-If `true` expanded rows will be paginated along with the rest of the table (which means expaned rows may span multiple pages).
+If `true` expanded rows will be paginated along with the rest of the table (which means expanded rows may span multiple pages).
 
 If `false` expanded rows will not be considered for pagination (which means expanded rows will always render on their parents page. This also means more rows will be rendered than the set page size)
 
-## Table API API
+## Table API
 
 ### `setExpanded`
 

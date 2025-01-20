@@ -1,4 +1,4 @@
-import { SortingFn } from './features/Sorting'
+import { SortingFn } from './features/RowSorting'
 
 export const reSplitAlphaNumeric = /([0-9]+)/gm
 
@@ -35,10 +35,13 @@ const textCaseSensitive: SortingFn<any> = (rowA, rowB, columnId) => {
 }
 
 const datetime: SortingFn<any> = (rowA, rowB, columnId) => {
-  return compareBasic(
-    (rowA.getValue(columnId) as Date).getTime(),
-    (rowB.getValue(columnId) as Date).getTime()
-  )
+  const a = rowA.getValue<Date>(columnId)
+  const b = rowB.getValue<Date>(columnId)
+
+  // Can handle nullish values
+  // Use > and < because == (and ===) doesn't work with
+  // Date objects (would require calling getTime()).
+  return a > b ? 1 : a < b ? -1 : 0
 }
 
 const basic: SortingFn<any> = (rowA, rowB, columnId) => {

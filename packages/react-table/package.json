@@ -1,16 +1,18 @@
 {
   "name": "@tanstack/react-table",
-  "author": "Tanner Linsley",
-  "version": "8.1.4",
+  "version": "8.20.6",
   "description": "Headless UI for building powerful tables & datagrids for React.",
+  "author": "Tanner Linsley",
   "license": "MIT",
-  "homepage": "https://github.com/tanstack/table#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tanstack/table.git"
+    "url": "https://github.com/TanStack/table.git",
+    "directory": "packages/react-table"
   },
-  "publishConfig": {
-    "registry": "https://registry.npmjs.org/"
+  "homepage": "https://tanstack.com/table",
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/tannerlinsley"
   },
   "keywords": [
     "react",
@@ -18,27 +20,45 @@
     "react-table",
     "datagrid"
   ],
-  "funding": {
-    "type": "github",
-    "url": "https://github.com/sponsors/tannerlinsley"
+  "type": "commonjs",
+  "module": "build/lib/index.esm.js",
+  "main": "build/lib/index.js",
+  "types": "build/lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./build/lib/index.d.ts",
+      "import": "./build/lib/index.mjs",
+      "default": "./build/lib/index.js"
+    },
+    "./package.json": "./package.json"
   },
-  "module": "build/esm/index.js",
-  "main": "build/cjs/react-table/src/index.js",
-  "browser": "build/umd/index.production.js",
-  "types": "build/types/index.d.ts",
   "sideEffects": false,
   "engines": {
     "node": ">=12"
   },
   "files": [
-    "build/**",
+    "build/lib/*",
+    "build/umd/*",
     "src"
   ],
+  "scripts": {
+    "clean": "rimraf ./build",
+    "test:lib": "vitest",
+    "test:lib:dev": "pnpm test:lib --watch",
+    "test:types": "tsc --noEmit",
+    "build": "pnpm build:rollup && pnpm build:types",
+    "build:rollup": "rollup --config rollup.config.mjs",
+    "build:types": "tsc --emitDeclarationOnly"
+  },
   "dependencies": {
-    "@tanstack/table-core": "8.1.4"
+    "@tanstack/table-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "react": "^18.3.1"
   },
   "peerDependencies": {
-    "react": ">=16",
-    "react-dom": ">=16"
+    "react": ">=16.8",
+    "react-dom": ">=16.8"
   }
 }

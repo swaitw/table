@@ -4,7 +4,6 @@ import ReactDOM from 'react-dom/client'
 import './index.css'
 
 import {
-  createTable,
   GroupingState,
   useReactTable,
   getPaginationRowModel,
@@ -29,6 +28,11 @@ function App() {
             accessorKey: 'firstName',
             header: 'First Name',
             cell: info => info.getValue(),
+            /**
+             * override the value used for row grouping
+             * (otherwise, defaults to the value derived from accessorKey / accessorFn)
+             */
+            getGroupingValue: row => `${row.firstName} ${row.lastName}`,
           },
           {
             accessorFn: row => row.lastName,
@@ -45,7 +49,7 @@ function App() {
             accessorKey: 'age',
             header: () => 'Age',
             aggregatedCell: ({ getValue }) =>
-              Math.round(getValue() * 100) / 100,
+              Math.round(getValue<number>() * 100) / 100,
             aggregationFn: 'median',
           },
           {
@@ -65,10 +69,10 @@ function App() {
                 accessorKey: 'progress',
                 header: 'Profile Progress',
                 cell: ({ getValue }) =>
-                  Math.round(getValue() * 100) / 100 + '%',
+                  Math.round(getValue<number>() * 100) / 100 + '%',
                 aggregationFn: 'mean',
                 aggregatedCell: ({ getValue }) =>
-                  Math.round(getValue() * 100) / 100 + '%',
+                  Math.round(getValue<number>() * 100) / 100 + '%',
               },
             ],
           },
@@ -150,10 +154,10 @@ function App() {
                           background: cell.getIsGrouped()
                             ? '#0aff0082'
                             : cell.getIsAggregated()
-                            ? '#ffa50078'
-                            : cell.getIsPlaceholder()
-                            ? '#ff000042'
-                            : 'white',
+                              ? '#ffa50078'
+                              : cell.getIsPlaceholder()
+                                ? '#ff000042'
+                                : 'white',
                         },
                       }}
                     >
@@ -242,6 +246,8 @@ function App() {
           | Go to page:
           <input
             type="number"
+            min="1"
+            max={table.getPageCount()}
             defaultValue={table.getState().pagination.pageIndex + 1}
             onChange={e => {
               const page = e.target.value ? Number(e.target.value) - 1 : 0

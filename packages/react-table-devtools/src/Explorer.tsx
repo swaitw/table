@@ -4,7 +4,7 @@ import React from 'react'
 
 import { styled } from './utils'
 
-export const Entry = styled('div', {
+const Entry = styled('div', {
   fontFamily: 'Menlo, monospace',
   fontSize: '0.7rem',
   lineHeight: '1.7',
@@ -12,27 +12,27 @@ export const Entry = styled('div', {
   wordBreak: 'break-word',
 })
 
-export const Label = styled('span', {
+const Label = styled('span', {
   cursor: 'pointer',
   color: 'white',
 })
 
-export const Value = styled('span', (props, theme) => ({
+const Value = styled('span', (props, theme) => ({
   color: theme.danger,
 }))
 
-export const SubEntries = styled('div', {
+const SubEntries = styled('div', {
   marginLeft: '.1rem',
   paddingLeft: '1rem',
   borderLeft: '2px solid rgba(0,0,0,.15)',
 })
 
-export const Info = styled('span', {
+const Info = styled('span', {
   color: 'grey',
   fontSize: '.7rem',
 })
 
-export const Expander = ({ expanded, style = {}, ...rest }) => (
+const Expander = ({ expanded, style = {}, ...rest }) => (
   <span
     style={{
       display: 'inline-block',
@@ -80,7 +80,7 @@ const DefaultRenderer = ({
           {expanded ? (
             subEntryPages.length === 1 ? (
               <SubEntries>
-                {subEntries.map((entry) => handleEntry(entry))}
+                {subEntries.map(entry => handleEntry(entry))}
               </SubEntries>
             ) : (
               <SubEntries>
@@ -89,10 +89,10 @@ const DefaultRenderer = ({
                     <Entry>
                       <Label
                         onClick={() =>
-                          setExpandedPages((old) =>
+                          setExpandedPages(old =>
                             old.includes(index)
-                              ? old.filter((d) => d !== index)
-                              : [...old, index],
+                              ? old.filter(d => d !== index)
+                              : [...old, index]
                           )
                         }
                       >
@@ -101,7 +101,7 @@ const DefaultRenderer = ({
                       </Label>
                       {expandedPages.includes(index) ? (
                         <SubEntries>
-                          {entries.map((entry) => handleEntry(entry))}
+                          {entries.map(entry => handleEntry(entry))}
                         </SubEntries>
                       ) : null}
                     </Entry>
@@ -146,8 +146,8 @@ export default function Explorer({
 }) {
   const [expanded, setExpanded] = React.useState(defaultExpanded)
 
-  const toggle = (set) => {
-    setExpanded((old) => (typeof set !== 'undefined' ? set : !old))
+  const toggle = set => {
+    setExpanded(old => (typeof set !== 'undefined' ? set : !old))
   }
 
   const path = []
@@ -156,7 +156,7 @@ export default function Explorer({
   let subEntries
   const subEntryPages = []
 
-  const makeProperty = (sub) => {
+  const makeProperty = sub => {
     const newPath = path.concat(sub.label)
     const subDefaultExpanded =
       defaultExpanded === true
@@ -177,7 +177,7 @@ export default function Explorer({
       makeProperty({
         label: i,
         value: d,
-      }),
+      })
     )
   } else if (
     value !== null &&
@@ -189,7 +189,7 @@ export default function Explorer({
       makeProperty({
         label: i,
         value: val,
-      }),
+      })
     )
   } else if (typeof value === 'function') {
     type = 'function'
@@ -200,7 +200,7 @@ export default function Explorer({
       makeProperty({
         label,
         value,
-      }),
+      })
     )
   }
 
@@ -214,7 +214,7 @@ export default function Explorer({
   }
 
   return renderer({
-    handleEntry: (entry) => (
+    handleEntry: entry => (
       <Explorer key={entry.label} renderer={renderer} {...rest} {...entry} />
     ),
     type,

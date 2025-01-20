@@ -1,5 +1,5 @@
 ---
-title: Sorting
+title: Sorting APIs
 id: sorting
 ---
 
@@ -37,7 +37,7 @@ The following sorting functions are built-in to the table core:
 - `datetime`
   - Sorts by time, use this if your values are `Date` objects.
 - `basic`
-  - Sorts using a basic/standard `a > b ? -1 : b < a ? 1 : 0` comparison. This is the fastest sorting function, but may not be the most accurate.
+  - Sorts using a basic/standard `a > b ? 1 : a < b ? -1 : 0` comparison. This is the fastest sorting function, but may not be the most accurate.
 
 Every sorting function receives 2 rows and a column ID and are expected to compare the two rows using the column ID to return `-1`, `0`, or `1` in ascending order. Here's a cheat sheet:
 
@@ -68,7 +68,8 @@ The final list of sorting functions available for the `columnDef.sortingFn` use 
 ```tsx
 export type SortingFnOption<TData extends AnyData> =
   | 'auto'
-  | BuiltInSortingFn
+  | SortingFns
+  | BuiltInSortingFns
   | SortingFn<TData>
 ```
 
@@ -77,7 +78,7 @@ export type SortingFnOption<TData extends AnyData> =
 ### `sortingFn`
 
 ```tsx
-sortingFn?: SortingFn | keyof BuiltInSortingFns
+sortingFn?: SortingFn | keyof SortingFns | keyof BuiltInSortingFns
 ```
 
 The sorting function to use with this column.
@@ -122,14 +123,21 @@ Inverts the order of the sorting for this column. This is useful for values that
 ### `sortUndefined`
 
 ```tsx
-sortUndefined?: false | -1 | 1 // defaults to false
+sortUndefined?: 'first' | 'last' | false | -1 | 1 // defaults to 1
 ```
 
-| Value   | Description                                                                                                                    |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `false` | Undefined values will be considered tied and need to be sorted by the next colum filter or original index (which ever applies) |
-| `-1`    | Undefined values will be sorted with higher priority (ascending)                                                               |
-| `1`     | Undefined values will be sorted with lower priority (descending)                                                               |
+- `'first'`
+  - Undefined values will be pushed to the beginning of the list
+- `'last'`
+  - Undefined values will be pushed to the end of the list
+- `false`
+  - Undefined values will be considered tied and need to be sorted by the next column filter or original index (whichever applies)
+- `-1`
+  - Undefined values will be sorted with higher priority (ascending) (if ascending, undefined will appear on the beginning of the list)
+- `1`
+  - Undefined values will be sorted with lower priority (descending) (if ascending, undefined will appear on the end of the list)
+
+> NOTE: `'first'` and `'last'` options are new in v8.16.0
 
 ## Column API
 
@@ -197,6 +205,14 @@ getIsSorted: () => false | SortDirection
 
 Returns whether this column is sorted.
 
+### `getFirstSortDir`
+
+```tsx 
+getFirstSortDir: () => SortDirection
+```
+
+Returns the first direction that should be used when sorting this column.
+
 ### `clearSorting`
 
 ```tsx
@@ -222,6 +238,35 @@ getToggleSortingHandler: () => undefined | ((event: unknown) => void)
 Returns a function that can be used to toggle this column's sorting state. This is useful for attaching a click handler to the column header.
 
 ## Table Options
+
+### `sortingFns`
+
+```tsx
+sortingFns?: Record<string, SortingFn>
+```
+
+This option allows you to define custom sorting functions that can be referenced in a column's `sortingFn` option by their key.
+Example:
+
+```tsx
+declare module '@tanstack/table-core' {
+  interface SortingFns {
+    myCustomSorting: SortingFn<unknown>
+  }
+}
+
+const column = columnHelper.data('key', {
+  sortingFn: 'myCustomSorting',
+})
+
+const table = useReactTable({
+  columns: [column],
+  sortingFns: {
+    myCustomSorting: (rowA: any, rowB: any, columnId: any): number =>
+      rowA.getValue(columnId).value < rowB.getValue(columnId).value ? 1 : -1,
+  },
+})
+```
 
 ### `manualSorting`
 
@@ -254,6 +299,8 @@ enableSortingRemoval?: boolean
 ```
 
 Enables/Disables the ability to remove sorting for the table.
+- If `true` then changing sort order will circle like: 'none' -> 'desc' -> 'asc' -> 'none' -> ...
+- If `false` then changing sort order will circle like: 'none' -> 'desc' -> 'asc' -> 'desc' -> 'asc' -> ...
 
 ### `enableMultiRemove`
 
@@ -303,7 +350,7 @@ isMultiSortEvent?: (e: unknown) => boolean
 
 Pass a custom function that will be used to determine if a multi-sort event should be triggered. It is passed the event from the sort toggle handler and should return `true` if the event should trigger a multi-sort.
 
-## Table API API
+## Table API
 
 ### `setSorting`
 

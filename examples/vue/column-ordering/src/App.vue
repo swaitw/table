@@ -1,71 +1,66 @@
 <script setup lang="ts">
 import {
   type ColumnOrderState,
-  flexRender,
+  FlexRender,
   getCoreRowModel,
   useVueTable,
   type Column,
-  type ColumnDef
+  createColumnHelper,
 } from '@tanstack/vue-table'
 
 import { makeData, type Person } from './makeData'
 import { ref } from 'vue'
-import faker from '@faker-js/faker'
+import { faker } from '@faker-js/faker'
 
-const defaultColumns: ColumnDef<Person>[] = [
-  {
+const columnHelper = createColumnHelper<Person>()
+
+const data = ref(makeData(20))
+const columns = ref([
+  columnHelper.group({
     header: 'Name',
     footer: props => props.column.id,
     columns: [
-      {
-        accessorKey: 'firstName'
+      columnHelper.accessor('firstName', {
         cell: info => info.getValue(),
         footer: props => props.column.id,
-      },
-      {
-        accessorFn: row => row.lastName
+      }),
+      columnHelper.accessor(row => row.lastName, {
         id: 'lastName',
         cell: info => info.getValue(),
-        header: 'Last Name',
+        header: () => 'Last Name',
         footer: props => props.column.id,
-      },
+      }),
     ],
-  },
-  {
+  }),
+  columnHelper.group({
     header: 'Info',
     footer: props => props.column.id,
     columns: [
-      {
-        accessorKey: 'age'
-        header: 'Age',
+      columnHelper.accessor('age', {
+        header: () => 'Age',
         footer: props => props.column.id,
-      },
-      {
+      }),
+      columnHelper.group({
         header: 'More Info',
         columns: [
-          {
-            accessorKey: 'visits'
+          columnHelper.accessor('visits', {
             header: () => 'Visits',
             footer: props => props.column.id,
-          },
-          {
-            accessorKey: 'status'
+          }),
+          columnHelper.accessor('status', {
             header: 'Status',
             footer: props => props.column.id,
-          },
-          {
-            accessorKey: 'progress'
+          }),
+          columnHelper.accessor('progress', {
             header: 'Profile Progress',
             footer: props => props.column.id,
-          },
+          }),
         ],
-      },
+      }),
     ],
-  },
-]
+  }),
+])
 
-const data = ref(makeData(20))
-const columns = ref(defaultColumns)
 const columnVisibility = ref({})
 const columnOrder = ref<ColumnOrderState>([])
 
@@ -88,7 +83,8 @@ const table = useVueTable({
   },
 
   onColumnOrderChange: order => {
-    columnOrder.value = order
+    columnOrder.value =
+      order instanceof Function ? order(columnOrder.value) : order
   },
   getCoreRowModel: getCoreRowModel(),
   debugTable: true,
@@ -102,7 +98,7 @@ const randomizeColumns = () => {
   )
 }
 
-function toggleColumnVisibility(column: Column<any>) {
+function toggleColumnVisibility(column: Column<any, any>) {
   columnVisibility.value = {
     ...columnVisibility.value,
     [column.id]: !column.getIsVisible(),
@@ -165,14 +161,21 @@ function toggleAllColumnsVisibility() {
             :key="header.id"
             :colSpan="header.colSpan"
           >
-            <component v-if="!header.isPlaceholder" :is="header.renderHeader" />
+            <FlexRender
+              v-if="!header.isPlaceholder"
+              :render="header.column.columnDef.header"
+              :props="header.getContext()"
+            />
           </th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="row in table.getRowModel().rows" :key="row.id">
           <td v-for="cell in row.getVisibleCells()" :key="cell.id">
-            <component :is="cell.renderCell" />
+            <FlexRender
+              :render="cell.column.columnDef.cell"
+              :props="cell.getContext()"
+            />
           </td>
         </tr>
       </tbody>
@@ -186,7 +189,11 @@ function toggleAllColumnsVisibility() {
             :key="header.id"
             :colSpan="header.colSpan"
           >
-            <component v-if="!header.isPlaceholder" :is="header.renderFooter" />
+            <FlexRender
+              v-if="!header.isPlaceholder"
+              :render="header.column.columnDef.footer"
+              :props="header.getContext()"
+            />
           </th>
         </tr>
       </tfoot>

@@ -3,13 +3,11 @@ import ReactDOM from 'react-dom/client'
 import './index.css'
 
 import {
-  createTable,
   PaginationState,
   useReactTable,
   getCoreRowModel,
   getPaginationRowModel,
   ColumnDef,
-  OnChangeFn,
   flexRender,
 } from '@tanstack/react-table'
 import { makeData, Person } from './makeData'
@@ -29,7 +27,7 @@ function App() {
             footer: props => props.column.id,
           },
           {
-            accessorKey: row => row.lastName,
+            accessorFn: row => row.lastName,
             id: 'lastName',
             cell: info => info.getValue(),
             header: () => <span>Last Name</span>,
@@ -173,6 +171,8 @@ function App() {
             | Go to page:
             <input
               type="number"
+              min="1"
+              max={table.getPageCount()}
               defaultValue={table.getState().pagination.pageIndex + 1}
               onChange={e => {
                 const page = e.target.value ? Number(e.target.value) - 1 : 0

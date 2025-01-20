@@ -5,15 +5,15 @@ import './index.css'
 
 import {
   Column,
-  Table as ReactTable,
+  ColumnDef,
   PaginationState,
-  useReactTable,
+  Table,
+  flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
-  ColumnDef,
-  OnChangeFn,
-  flexRender,
+  getSortedRowModel,
+  useReactTable,
 } from '@tanstack/react-table'
 
 import { makeData, Person } from './makeData'
@@ -24,53 +24,36 @@ function App() {
   const columns = React.useMemo<ColumnDef<Person>[]>(
     () => [
       {
-        header: 'Name',
+        accessorKey: 'firstName',
+        cell: info => info.getValue(),
         footer: props => props.column.id,
-        columns: [
-          {
-            accessorKey: 'firstName',
-            cell: info => info.getValue(),
-            footer: props => props.column.id,
-          },
-          {
-            accessorFn: row => row.lastName,
-            id: 'lastName',
-            cell: info => info.getValue(),
-            header: () => <span>Last Name</span>,
-            footer: props => props.column.id,
-          },
-        ],
       },
       {
-        header: 'Info',
+        accessorFn: row => row.lastName,
+        id: 'lastName',
+        cell: info => info.getValue(),
+        header: () => <span>Last Name</span>,
         footer: props => props.column.id,
-        columns: [
-          {
-            accessorKey: 'age',
-            header: () => 'Age',
-            footer: props => props.column.id,
-          },
-          {
-            header: 'More Info',
-            columns: [
-              {
-                accessorKey: 'visits',
-                header: () => <span>Visits</span>,
-                footer: props => props.column.id,
-              },
-              {
-                accessorKey: 'status',
-                header: 'Status',
-                footer: props => props.column.id,
-              },
-              {
-                accessorKey: 'progress',
-                header: 'Profile Progress',
-                footer: props => props.column.id,
-              },
-            ],
-          },
-        ],
+      },
+      {
+        accessorKey: 'age',
+        header: () => 'Age',
+        footer: props => props.column.id,
+      },
+      {
+        accessorKey: 'visits',
+        header: () => <span>Visits</span>,
+        footer: props => props.column.id,
+      },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+        footer: props => props.column.id,
+      },
+      {
+        accessorKey: 'progress',
+        header: 'Profile Progress',
+        footer: props => props.column.id,
       },
     ],
     []
@@ -81,10 +64,10 @@ function App() {
 
   return (
     <>
-      <Table
+      <MyTable
         {...{
           data,
-          columns
+          columns,
         }}
       />
       <hr />
@@ -98,22 +81,32 @@ function App() {
   )
 }
 
-function Table({
+function MyTable({
   data,
-  columns
+  columns,
 }: {
   data: Person[]
   columns: ColumnDef<Person>[]
 }) {
+  const [pagination, setPagination] = React.useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  })
+
   const table = useReactTable({
-    data,
     columns,
-    // Pipeline
+    data,
+    debugTable: true,
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    //
-    debugTable: true,
+    onPaginationChange: setPagination,
+    //no need to pass pageCount or rowCount with client-side pagination as it is calculated automatically
+    state: {
+      pagination,
+    },
+    // autoResetPageIndex: false, // turn off page index reset when sorting or filtering
   })
 
   return (
@@ -126,19 +119,28 @@ function Table({
               {headerGroup.headers.map(header => {
                 return (
                   <th key={header.id} colSpan={header.colSpan}>
-                    {header.isPlaceholder ? null : (
-                      <div>
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                        {header.column.getCanFilter() ? (
-                          <div>
-                            <Filter column={header.column} table={table} />
-                          </div>
-                        ) : null}
-                      </div>
-                    )}
+                    <div
+                      {...{
+                        className: header.column.getCanSort()
+                          ? 'cursor-pointer select-none'
+                          : '',
+                        onClick: header.column.getToggleSortingHandler(),
+                      }}
+                    >
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                      {{
+                        asc: ' 🔼',
+                        desc: ' 🔽',
+                      }[header.column.getIsSorted() as string] ?? null}
+                      {header.column.getCanFilter() ? (
+                        <div>
+                          <Filter column={header.column} table={table} />
+                        </div>
+                      ) : null}
+                    </div>
                   </th>
                 )
               })}
@@ -168,7 +170,7 @@ function Table({
       <div className="flex items-center gap-2">
         <button
           className="border rounded p-1"
-          onClick={() => table.setPageIndex(0)}
+          onClick={() => table.firstPage()}
           disabled={!table.getCanPreviousPage()}
         >
           {'<<'}
@@ -189,7 +191,7 @@ function Table({
         </button>
         <button
           className="border rounded p-1"
-          onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+          onClick={() => table.lastPage()}
           disabled={!table.getCanNextPage()}
         >
           {'>>'}
@@ -198,13 +200,15 @@ function Table({
           <div>Page</div>
           <strong>
             {table.getState().pagination.pageIndex + 1} of{' '}
-            {table.getPageCount()}
+            {table.getPageCount().toLocaleString()}
           </strong>
         </span>
         <span className="flex items-center gap-1">
           | Go to page:
           <input
             type="number"
+            min="1"
+            max={table.getPageCount()}
             defaultValue={table.getState().pagination.pageIndex + 1}
             onChange={e => {
               const page = e.target.value ? Number(e.target.value) - 1 : 0
@@ -226,12 +230,22 @@ function Table({
           ))}
         </select>
       </div>
-      <div>{table.getRowModel().rows.length} Rows</div>
+      <div>
+        Showing {table.getRowModel().rows.length.toLocaleString()} of{' '}
+        {table.getRowCount().toLocaleString()} Rows
+      </div>
       <pre>{JSON.stringify(table.getState().pagination, null, 2)}</pre>
     </div>
   )
 }
-function Filter({ column, table }: { column: Column<any>; table: ReactTable<any> }) {
+
+function Filter({
+  column,
+  table,
+}: {
+  column: Column<any, any>
+  table: Table<any>
+}) {
   const firstValue = table
     .getPreFilteredRowModel()
     .flatRows[0]?.getValue(column.id)
@@ -239,7 +253,7 @@ function Filter({ column, table }: { column: Column<any>; table: ReactTable<any>
   const columnFilterValue = column.getFilterValue()
 
   return typeof firstValue === 'number' ? (
-    <div className="flex space-x-2">
+    <div className="flex space-x-2" onClick={e => e.stopPropagation()}>
       <input
         type="number"
         value={(columnFilterValue as [number, number])?.[0] ?? ''}
@@ -267,11 +281,12 @@ function Filter({ column, table }: { column: Column<any>; table: ReactTable<any>
     </div>
   ) : (
     <input
+      className="w-36 border shadow rounded"
+      onChange={e => column.setFilterValue(e.target.value)}
+      onClick={e => e.stopPropagation()}
+      placeholder={`Search...`}
       type="text"
       value={(columnFilterValue ?? '') as string}
-      onChange={e => column.setFilterValue(e.target.value)}
-      placeholder={`Search...`}
-      className="w-36 border shadow rounded"
     />
   )
 }

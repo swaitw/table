@@ -4,15 +4,18 @@
     getCoreRowModel,
     createSvelteTable,
     getSortedRowModel,
-    TableOptions,
     flexRender,
-    ColumnDef,
   } from '@tanstack/svelte-table'
-  import { makeData, Person } from './makeData'
-  import faker from '@faker-js/faker'
+  import type {
+    ColumnDef,
+    ColumnOrderState,
+    OnChangeFn,
+    TableOptions,
+    VisibilityState,
+  } from '@tanstack/svelte-table'
+  import { makeData, type Person } from './makeData'
+  import { faker } from '@faker-js/faker'
   import './index.css'
-
-  
 
   const columns: ColumnDef<Person>[] = [
     {
@@ -68,10 +71,10 @@
 
   const data = makeData(5000)
 
-  let columnOrder = []
-  let columnVisibility = {}
+  let columnOrder: ColumnOrderState = []
+  let columnVisibility: VisibilityState = {}
 
-  const setColumnOrder = updater => {
+  const setColumnOrder: OnChangeFn<ColumnOrderState> = updater => {
     if (updater instanceof Function) {
       columnOrder = updater(columnOrder)
     } else {
@@ -86,7 +89,7 @@
     }))
   }
 
-  const setColumnVisibility = updater => {
+  const setColumnVisibility: OnChangeFn<VisibilityState> = updater => {
     if (updater instanceof Function) {
       columnVisibility = updater(columnVisibility)
     } else {
@@ -101,21 +104,19 @@
     }))
   }
 
-  const options = writable<TableOptions<Person>>(
-    {
-      data,
-      columns,
-      state: {
-        columnOrder,
-        columnVisibility,
-      },
-      onColumnOrderChange: setColumnOrder,
-      onColumnVisibilityChange: setColumnVisibility,
-      getCoreRowModel: getCoreRowModel(),
-      getSortedRowModel: getSortedRowModel(),
-      debugTable: true,
-    }
-  )
+  const options = writable<TableOptions<Person>>({
+    data,
+    columns,
+    state: {
+      columnOrder,
+      columnVisibility,
+    },
+    onColumnOrderChange: setColumnOrder,
+    onColumnVisibilityChange: setColumnVisibility,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    debugTable: true,
+  })
 
   const randomizeColumns = () => {
     $table.setColumnOrder(_updater =>
@@ -177,7 +178,12 @@
           {#each headerGroup.headers as header}
             <th colSpan={header.colSpan}>
               {#if !header.isPlaceholder}
-                <svelte:component this={flexRender(header.column.columnDef.header, header.getContext())} />
+                <svelte:component
+                  this={flexRender(
+                    header.column.columnDef.header,
+                    header.getContext()
+                  )}
+                />
               {/if}
             </th>
           {/each}
@@ -189,7 +195,9 @@
         <tr>
           {#each row.getVisibleCells() as cell}
             <td>
-              <svelte:component this={flexRender(cell.column.columnDef.cell, cell.getContext())} />
+              <svelte:component
+                this={flexRender(cell.column.columnDef.cell, cell.getContext())}
+              />
             </td>
           {/each}
         </tr>

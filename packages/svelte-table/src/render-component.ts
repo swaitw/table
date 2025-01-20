@@ -1,3 +1,4 @@
+import type { ComponentType, ComponentProps } from 'svelte'
 import {
   SvelteComponent,
   claim_component,
@@ -46,7 +47,10 @@ function create_fragment(ctx: any, Comp: any, props: any) {
   }
 }
 
-function renderClient(Comp: any, props: any): any {
+function renderClient<T>(
+  Comp: T,
+  props: T extends ComponentType<infer C> ? ComponentProps<C> : any
+) {
   return class WrapperComp extends SvelteComponent {
     constructor(options: any) {
       super()
@@ -60,10 +64,13 @@ function renderClient(Comp: any, props: any): any {
         undefined
       )
     }
-  }
+  } as ComponentType
 }
 
-function renderServer(Comp: any, props: any) {
+function renderServer<T>(
+  Comp: T,
+  props: T extends ComponentType<infer C> ? ComponentProps<C> : any
+) {
   const WrapperComp = create_ssr_component(
     ($$result: any, $$props: any, $$bindings: any, slots: any) => {
       return `${validate_component(Comp, 'TableComponent').$$render(
@@ -75,7 +82,7 @@ function renderServer(Comp: any, props: any) {
     }
   )
 
-  return WrapperComp
+  return WrapperComp as unknown as ComponentType
 }
 
 export const renderComponent =

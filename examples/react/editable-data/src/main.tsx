@@ -6,7 +6,6 @@ import './index.css'
 
 //
 import {
-  createTable,
   Column,
   Table,
   ColumnDef,
@@ -15,11 +14,14 @@ import {
   getFilteredRowModel,
   getPaginationRowModel,
   flexRender,
+  RowData,
 } from '@tanstack/react-table'
 import { makeData, Person } from './makeData'
 
-type TableMeta = {
-  updateData: (rowIndex: number, columnId: string, value: unknown) => void
+declare module '@tanstack/react-table' {
+  interface TableMeta<TData extends RowData> {
+    updateData: (rowIndex: number, columnId: string, value: unknown) => void
+  }
 }
 
 // Give our default column cell renderer editing superpowers!
@@ -31,7 +33,7 @@ const defaultColumn: Partial<ColumnDef<Person>> = {
 
     // When the input is blurred, we'll call our table meta's updateData function
     const onBlur = () => {
-      ;(table.options.meta as TableMeta).updateData(index, id, value)
+      table.options.meta?.updateData(index, id, value)
     }
 
     // If the initialValue is changed external, sync it up with our state
@@ -137,7 +139,7 @@ function App() {
     // Provide our updateData function to our table meta
     meta: {
       updateData: (rowIndex, columnId, value) => {
-        // Skip age index reset until after next rerender
+        // Skip page index reset until after next rerender
         skipAutoResetPageIndex()
         setData(old =>
           old.map((row, index) => {
@@ -151,7 +153,7 @@ function App() {
           })
         )
       },
-    } as TableMeta,
+    },
     debugTable: true,
   })
 
@@ -244,6 +246,8 @@ function App() {
           | Go to page:
           <input
             type="number"
+            min="1"
+            max={table.getPageCount()}
             defaultValue={table.getState().pagination.pageIndex + 1}
             onChange={e => {
               const page = e.target.value ? Number(e.target.value) - 1 : 0
@@ -275,7 +279,13 @@ function App() {
     </div>
   )
 }
-function Filter({ column, table }: { column: Column<any>; table: Table<any> }) {
+function Filter({
+  column,
+  table,
+}: {
+  column: Column<any, any>
+  table: Table<any>
+}) {
   const firstValue = table
     .getPreFilteredRowModel()
     .flatRows[0]?.getValue(column.id)

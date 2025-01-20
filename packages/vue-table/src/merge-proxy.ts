@@ -2,7 +2,7 @@ function trueFn() {
   return true
 }
 
-export const $PROXY = Symbol('merge-proxy')
+const $PROXY = Symbol('merge-proxy')
 
 // https://github.com/solidjs/solid/blob/c20ca4fd8c36bc0522fedb2c7f38a110b7ee2663/packages/solid/src/render/component.ts#L51-L118
 const propTraps: ProxyHandler<{
@@ -73,7 +73,7 @@ export function mergeProxy(...sources: any): any {
         const keys = []
         for (let i = 0; i < sources.length; i++)
           keys.push(...Object.keys(resolveSource(sources[i])))
-        return [...new Set(keys)]
+        return [...Array.from(new Set(keys))]
       },
     },
     propTraps

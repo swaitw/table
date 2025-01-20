@@ -1,5 +1,5 @@
-import { Table, TableGenerics, RowData } from '../types'
-import { memo } from '../utils'
+import { Table, RowData } from '../types'
+import { getMemoOptions, memo } from '../utils'
 
 export function getFacetedMinMaxValues<TData extends RowData>(): (
   table: Table<TData>,
@@ -7,34 +7,27 @@ export function getFacetedMinMaxValues<TData extends RowData>(): (
 ) => () => undefined | [number, number] {
   return (table, columnId) =>
     memo(
-      () => [table.getColumn(columnId).getFacetedRowModel()],
+      () => [table.getColumn(columnId)?.getFacetedRowModel()],
       facetedRowModel => {
-        const firstValue = facetedRowModel.flatRows[0]?.getValue(columnId)
+        if (!facetedRowModel) return undefined
 
-        if (typeof firstValue === 'undefined') {
-          return undefined
+        const uniqueValues = facetedRowModel.flatRows
+          .flatMap(flatRow => flatRow.getUniqueValues(columnId) ?? [])
+          .map(Number)
+          .filter(value => !Number.isNaN(value))
+
+        if (!uniqueValues.length) return
+
+        let facetedMinValue = uniqueValues[0]!
+        let facetedMaxValue = uniqueValues[uniqueValues.length - 1]!
+
+        for (const value of uniqueValues) {
+          if (value < facetedMinValue) facetedMinValue = value
+          else if (value > facetedMaxValue) facetedMaxValue = value
         }
 
-        let facetedMinMaxValues: [any, any] = [firstValue, firstValue]
-
-        for (let i = 0; i < facetedRowModel.flatRows.length; i++) {
-          const value = facetedRowModel.flatRows[i]?.getValue(columnId)
-
-          if (value < facetedMinMaxValues[0]) {
-            facetedMinMaxValues[0] = value
-          } else if (value > facetedMinMaxValues[1]) {
-            facetedMinMaxValues[1] = value
-          }
-        }
-
-        return facetedMinMaxValues
+        return [facetedMinValue, facetedMaxValue]
       },
-      {
-        key:
-          process.env.NODE_ENV === 'development' &&
-          'getFacetedMinMaxValues_' + columnId,
-        debug: () => table.options.debugAll ?? table.options.debugTable,
-        onChange: () => {},
-      }
+      getMemoOptions(table.options, 'debugTable', 'getFacetedMinMaxValues')
     )
 }

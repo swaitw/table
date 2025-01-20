@@ -1,5 +1,4 @@
-import faker from '@faker-js/faker'
-import { date } from 'faker'
+import { faker } from '@faker-js/faker'
 
 export type Person = {
   firstName: string
@@ -12,7 +11,7 @@ export type Person = {
 }
 
 const range = (len: number) => {
-  const arr = []
+  const arr: number[] = []
   for (let i = 0; i < len; i++) {
     arr.push(i)
   }
@@ -21,11 +20,11 @@ const range = (len: number) => {
 
 const newPerson = (): Person => {
   return {
-    firstName: faker.name.firstName(),
-    lastName: faker.name.lastName(),
-    age: faker.datatype.number(40),
-    visits: faker.datatype.number(1000),
-    progress: faker.datatype.number(100),
+    firstName: faker.person.firstName(),
+    lastName: faker.person.lastName(),
+    age: faker.number.int(40),
+    visits: faker.number.int(1000),
+    progress: faker.number.int(100),
     status: faker.helpers.shuffle<Person['status']>([
       'relationship',
       'complicated',
@@ -37,7 +36,7 @@ const newPerson = (): Person => {
 export function makeData(...lens: number[]) {
   const makeDataLevel = (depth = 0): Person[] => {
     const len = lens[depth]!
-    return range(len).map((d): Person => {
+    return range(len).map((_d): Person => {
       return {
         ...newPerson(),
         subRows: lens[depth + 1] ? makeDataLevel(depth + 1) : undefined,
@@ -63,5 +62,6 @@ export async function fetchData(options: {
       (options.pageIndex + 1) * options.pageSize
     ),
     pageCount: Math.ceil(data.length / options.pageSize),
+    rowCount: data.length,
   }
 }

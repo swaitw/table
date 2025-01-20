@@ -40,6 +40,7 @@ function App() {
             <IndeterminateCheckbox
               {...{
                 checked: row.getIsSelected(),
+                disabled: !row.getCanSelect(),
                 indeterminate: row.getIsSomeSelected(),
                 onChange: row.getToggleSelectedHandler(),
               }}
@@ -109,6 +110,8 @@ function App() {
     state: {
       rowSelection,
     },
+    enableRowSelection: true, //enable row selection for all rows
+    // enableRowSelection: row => row.original.age > 18, // or enable row selection conditionally per row
     onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -227,6 +230,8 @@ function App() {
           | Go to page:
           <input
             type="number"
+            min="1"
+            max={table.getPageCount()}
             defaultValue={table.getState().pagination.pageIndex + 1}
             onChange={e => {
               const page = e.target.value ? Number(e.target.value) - 1 : 0
@@ -271,29 +276,31 @@ function App() {
       <div>
         <button
           className="border rounded p-2 mb-2"
-          onClick={() => console.info('rowSelection', rowSelection)}
-        >
-          Log `rowSelection` state
-        </button>
-      </div>
-      <div>
-        <button
-          className="border rounded p-2 mb-2"
           onClick={() =>
             console.info(
-              'table.getSelectedFlatRows()',
+              'table.getSelectedRowModel().flatRows',
               table.getSelectedRowModel().flatRows
             )
           }
         >
-          Log table.getSelectedFlatRows()
+          Log table.getSelectedRowModel().flatRows
         </button>
+      </div>
+      <div>
+        <label>Row Selection State:</label>
+        <pre>{JSON.stringify(table.getState().rowSelection, null, 2)}</pre>
       </div>
     </div>
   )
 }
 
-function Filter({ column, table }: { column: Column<any>; table: Table<any> }) {
+function Filter({
+  column,
+  table,
+}: {
+  column: Column<any, any>
+  table: Table<any>
+}) {
   const firstValue = table
     .getPreFilteredRowModel()
     .flatRows[0]?.getValue(column.id)

@@ -1,5 +1,5 @@
-import { Table, RowModel, TableGenerics, Row, RowData } from '../types'
-import { memo } from '../utils'
+import { Table, RowModel, Row, RowData } from '../types'
+import { getMemoOptions, memo } from '../utils'
 import { expandRows } from './getExpandedRowModel'
 
 export function getPaginationRowModel<TData extends RowData>(opts?: {
@@ -7,7 +7,13 @@ export function getPaginationRowModel<TData extends RowData>(opts?: {
 }): (table: Table<TData>) => () => RowModel<TData> {
   return table =>
     memo(
-      () => [table.getState().pagination, table.getPrePaginationRowModel()],
+      () => [
+        table.getState().pagination,
+        table.getPrePaginationRowModel(),
+        table.options.paginateExpandedRows
+          ? undefined
+          : table.getState().expanded,
+      ],
       (pagination, rowModel) => {
         if (!rowModel.rows.length) {
           return rowModel
@@ -23,14 +29,11 @@ export function getPaginationRowModel<TData extends RowData>(opts?: {
         let paginatedRowModel: RowModel<TData>
 
         if (!table.options.paginateExpandedRows) {
-          paginatedRowModel = expandRows(
-            {
-              rows,
-              flatRows,
-              rowsById,
-            },
-            table
-          )
+          paginatedRowModel = expandRows({
+            rows,
+            flatRows,
+            rowsById,
+          })
         } else {
           paginatedRowModel = {
             rows,
@@ -52,9 +55,6 @@ export function getPaginationRowModel<TData extends RowData>(opts?: {
 
         return paginatedRowModel
       },
-      {
-        key: process.env.NODE_ENV === 'development' && 'getPaginationRowModel',
-        debug: () => table.options.debugAll ?? table.options.debugTable,
-      }
+      getMemoOptions(table.options, 'debugTable', 'getPaginationRowModel')
     )
 }

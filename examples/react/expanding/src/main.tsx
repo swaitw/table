@@ -1,10 +1,9 @@
-import React, { HTMLAttributes, HTMLProps } from 'react'
+import React, { HTMLProps } from 'react'
 import ReactDOM from 'react-dom/client'
 
 import './index.css'
 
 import {
-  createTable,
   Column,
   Table,
   ExpandedState,
@@ -24,103 +23,88 @@ function App() {
   const columns = React.useMemo<ColumnDef<Person>[]>(
     () => [
       {
-        header: 'Name',
-        footer: props => props.column.id,
-        columns: [
-          {
-            accessorKey: 'firstName',
-            header: ({ table }) => (
-              <>
-                <IndeterminateCheckbox
-                  {...{
-                    checked: table.getIsAllRowsSelected(),
-                    indeterminate: table.getIsSomeRowsSelected(),
-                    onChange: table.getToggleAllRowsSelectedHandler(),
-                  }}
-                />{' '}
+        accessorKey: 'firstName',
+        header: ({ table }) => (
+          <>
+            <IndeterminateCheckbox
+              {...{
+                checked: table.getIsAllRowsSelected(),
+                indeterminate: table.getIsSomeRowsSelected(),
+                onChange: table.getToggleAllRowsSelectedHandler(),
+              }}
+            />{' '}
+            <button
+              {...{
+                onClick: table.getToggleAllRowsExpandedHandler(),
+              }}
+            >
+              {table.getIsAllRowsExpanded() ? '👇' : '👉'}
+            </button>{' '}
+            First Name
+          </>
+        ),
+        cell: ({ row, getValue }) => (
+          <div
+            style={{
+              // Since rows are flattened by default,
+              // we can use the row.depth property
+              // and paddingLeft to visually indicate the depth
+              // of the row
+              paddingLeft: `${row.depth * 2}rem`,
+            }}
+          >
+            <div>
+              <IndeterminateCheckbox
+                {...{
+                  checked: row.getIsSelected(),
+                  indeterminate: row.getIsSomeSelected(),
+                  onChange: row.getToggleSelectedHandler(),
+                }}
+              />{' '}
+              {row.getCanExpand() ? (
                 <button
                   {...{
-                    onClick: table.getToggleAllRowsExpandedHandler(),
+                    onClick: row.getToggleExpandedHandler(),
+                    style: { cursor: 'pointer' },
                   }}
                 >
-                  {table.getIsAllRowsExpanded() ? '👇' : '👉'}
-                </button>{' '}
-                First Name
-              </>
-            ),
-            cell: ({ row, getValue }) => (
-              <div
-                style={{
-                  // Since rows are flattened by default,
-                  // we can use the row.depth property
-                  // and paddingLeft to visually indicate the depth
-                  // of the row
-                  paddingLeft: `${row.depth * 2}rem`,
-                }}
-              >
-                <IndeterminateCheckbox
-                  {...{
-                    checked: row.getIsSelected(),
-                    indeterminate: row.getIsSomeSelected(),
-                    onChange: row.getToggleSelectedHandler(),
-                  }}
-                />{' '}
-                {row.getCanExpand() ? (
-                  <button
-                    {...{
-                      onClick: row.getToggleExpandedHandler(),
-                      style: { cursor: 'pointer' },
-                    }}
-                  >
-                    {row.getIsExpanded() ? '👇' : '👉'}
-                  </button>
-                ) : (
-                  '🔵'
-                )}{' '}
-                {getValue()}
-              </div>
-            ),
-            footer: props => props.column.id,
-          },
-          {
-            accessorFn: row => row.lastName,
-            id: 'lastName',
-            cell: info => info.getValue(),
-            header: () => <span>Last Name</span>,
-            footer: props => props.column.id,
-          },
-        ],
+                  {row.getIsExpanded() ? '👇' : '👉'}
+                </button>
+              ) : (
+                '🔵'
+              )}{' '}
+              {getValue<boolean>()}
+            </div>
+          </div>
+        ),
+        footer: props => props.column.id,
       },
       {
-        header: 'Info',
+        accessorFn: row => row.lastName,
+        id: 'lastName',
+        cell: info => info.getValue(),
+        header: () => <span>Last Name</span>,
         footer: props => props.column.id,
-        columns: [
-          {
-            accessorKey: 'age',
-            header: () => 'Age',
-            footer: props => props.column.id,
-          },
-          {
-            header: 'More Info',
-            columns: [
-              {
-                accessorKey: 'visits',
-                header: () => <span>Visits</span>,
-                footer: props => props.column.id,
-              },
-              {
-                accessorKey: 'status',
-                header: 'Status',
-                footer: props => props.column.id,
-              },
-              {
-                accessorKey: 'progress',
-                header: 'Profile Progress',
-                footer: props => props.column.id,
-              },
-            ],
-          },
-        ],
+      },
+      {
+        accessorKey: 'age',
+        header: () => 'Age',
+        footer: props => props.column.id,
+      },
+      {
+        accessorKey: 'visits',
+        header: () => <span>Visits</span>,
+        footer: props => props.column.id,
+      },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+        footer: props => props.column.id,
+      },
+      {
+        accessorKey: 'progress',
+        header: 'Profile Progress',
+        footer: props => props.column.id,
       },
     ],
     []
@@ -143,6 +127,8 @@ function App() {
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getExpandedRowModel: getExpandedRowModel(),
+    // filterFromLeafRows: true,
+    // maxLeafRowFilterDepth: 0,
     debugTable: true,
   })
 
@@ -235,6 +221,8 @@ function App() {
           | Go to page:
           <input
             type="number"
+            min="1"
+            max={table.getPageCount()}
             defaultValue={table.getState().pagination.pageIndex + 1}
             onChange={e => {
               const page = e.target.value ? Number(e.target.value) - 1 : 0
@@ -263,12 +251,21 @@ function App() {
       <div>
         <button onClick={() => refreshData()}>Refresh Data</button>
       </div>
+      <label>Expanded State:</label>
       <pre>{JSON.stringify(expanded, null, 2)}</pre>
+      <label>Row Selection State:</label>
+      <pre>{JSON.stringify(table.getState().rowSelection, null, 2)}</pre>
     </div>
   )
 }
 
-function Filter({ column, table }: { column: Column<any>; table: Table<any> }) {
+function Filter({
+  column,
+  table,
+}: {
+  column: Column<any, any>
+  table: Table<any>
+}) {
   const firstValue = table
     .getPreFilteredRowModel()
     .flatRows[0]?.getValue(column.id)

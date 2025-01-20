@@ -1,12 +1,18 @@
-import { FilterFn } from './features/Filters'
+import { FilterFn } from './features/ColumnFiltering'
 
 const includesString: FilterFn<any> = (
   row,
   columnId: string,
   filterValue: string
 ) => {
-  const search = filterValue.toLowerCase()
-  return row.getValue(columnId)?.toLowerCase().includes(search)
+  const search = filterValue?.toString()?.toLowerCase()
+  return Boolean(
+    row
+      .getValue<string | null>(columnId)
+      ?.toString()
+      ?.toLowerCase()
+      ?.includes(search)
+  )
 }
 
 includesString.autoRemove = (val: any) => testFalsey(val)
@@ -16,7 +22,9 @@ const includesStringSensitive: FilterFn<any> = (
   columnId: string,
   filterValue: string
 ) => {
-  return row.getValue(columnId)?.includes(filterValue)
+  return Boolean(
+    row.getValue<string | null>(columnId)?.toString()?.includes(filterValue)
+  )
 }
 
 includesStringSensitive.autoRemove = (val: any) => testFalsey(val)
@@ -26,7 +34,10 @@ const equalsString: FilterFn<any> = (
   columnId: string,
   filterValue: string
 ) => {
-  return row.getValue(columnId)?.toLowerCase() === filterValue.toLowerCase()
+  return (
+    row.getValue<string | null>(columnId)?.toString()?.toLowerCase() ===
+    filterValue?.toLowerCase()
+  )
 }
 
 equalsString.autoRemove = (val: any) => testFalsey(val)
@@ -36,7 +47,7 @@ const arrIncludes: FilterFn<any> = (
   columnId: string,
   filterValue: unknown
 ) => {
-  return row.getValue(columnId)?.includes(filterValue)
+  return row.getValue<unknown[]>(columnId)?.includes(filterValue)
 }
 
 arrIncludes.autoRemove = (val: any) => testFalsey(val) || !val?.length
@@ -46,7 +57,9 @@ const arrIncludesAll: FilterFn<any> = (
   columnId: string,
   filterValue: unknown[]
 ) => {
-  return !filterValue.some(val => !row.getValue(columnId)?.includes(val))
+  return !filterValue.some(
+    val => !row.getValue<unknown[]>(columnId)?.includes(val)
+  )
 }
 
 arrIncludesAll.autoRemove = (val: any) => testFalsey(val) || !val?.length
@@ -56,7 +69,9 @@ const arrIncludesSome: FilterFn<any> = (
   columnId: string,
   filterValue: unknown[]
 ) => {
-  return filterValue.some(val => row.getValue(columnId)?.includes(val))
+  return filterValue.some(val =>
+    row.getValue<unknown[]>(columnId)?.includes(val)
+  )
 }
 
 arrIncludesSome.autoRemove = (val: any) => testFalsey(val) || !val?.length
@@ -84,7 +99,7 @@ const inNumberRange: FilterFn<any> = (
 ) => {
   let [min, max] = filterValue
 
-  const rowValue = row.getValue(columnId)
+  const rowValue = row.getValue<number>(columnId)
   return rowValue >= min && rowValue <= max
 }
 
